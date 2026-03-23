@@ -1,0 +1,51 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+.ai/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### MCP Registry ###
+.mcpregistry*
+
+# Downloaded Context Augmentation binary for integration tests
+its/src/test/resources/binaries/
+
+# Sonar Code Context configuration (track settings.json but ignore other files)
+!.sonar-code-context/
+.sonar-code-context/*
+!.sonar-code-context/settings.json
+
+.claude
