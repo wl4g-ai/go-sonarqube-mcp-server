@@ -44,6 +44,31 @@
                 "--files",
                 "service/src/main/java/com/wl4g/rengine/service/impl/sys/UploadServiceImpl.java"
             ]
+        },
+        {
+            "name": "sonarqube-mcp-agg-search-issue-summary",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "env": {
+                // "SONARQUBE_URL": "https://sonarqube.wl4g.com",
+                "SONARQUBE_URL": "https://httpbin.org/anything",
+                "SONARQUBE_TOKEN": "xxx"
+            },
+            "args": [
+                "--verbose",
+                "10",
+                "--transport",
+                "cli",
+                "agg_search_issue_summary",
+                "--ps",
+                "5",
+                "--branch",
+                "main",
+                "--key",
+                "rengine:apiserver/src/main/java/com/wl4g/RengineApiServer.java"
+            ]
         }
     ]
 }
