@@ -7,8 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // SQClient is a SonarQube API HTTP client.
@@ -269,4 +273,62 @@ func BuildProjectKeyParams(args map[string]interface{}, params url.Values) url.V
 		params.Set("pullRequest", pr)
 	}
 	return params
+}
+
+// FormatAuthorizationHeader normalizes a token for use in an HTTP Authorization header.
+// If the token already has a recognized prefix (Bearer or Basic, case-insensitive),
+// it is returned unchanged. Otherwise, "Bearer " is prepended.
+func FormatAuthorizationHeader(token string) string {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return token
+	}
+	lower := strings.ToLower(token)
+	if strings.HasPrefix(lower, "bearer ") || strings.HasPrefix(lower, "basic ") {
+		return token
+	}
+	return "Bearer " + token
+}
+
+// Config represents the project configuration read from $HOME/.{binaryName}/config.yaml.
+type Config struct {
+	Tools struct {
+		Include []string `yaml:"include"`
+	} `yaml:"tools"`
+}
+
+// LoadConfig reads the optional config.yaml from $HOME/.{binaryName}/config.yaml.
+// Returns nil if the config file does not exist (all tools enabled by default).
+func LoadConfig(binaryName string) (*Config, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, nil
+	}
+	configPath := filepath.Join(home, "."+binaryName, "config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read config %s: %w", configPath, err)
+	}
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse config %s: %w", configPath, err)
+	}
+	return &cfg, nil
+}
+
+// GetEnabledTools returns the set of tool names enabled by config.yaml.
+// Returns nil when no config exists or tools.include is empty — meaning all tools are enabled.
+func GetEnabledTools(binaryName string) map[string]bool {
+	cfg, _ := LoadConfig(binaryName)
+	if cfg == nil || len(cfg.Tools.Include) == 0 {
+		return nil
+	}
+	enabled := make(map[string]bool, len(cfg.Tools.Include))
+	for _, name := range cfg.Tools.Include {
+		enabled[name] = true
+	}
+	return enabled
 }

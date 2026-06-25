@@ -65,16 +65,24 @@ func (l *loggingWriter) WriteHeader(code int) {
 	l.ResponseWriter.WriteHeader(code)
 }
 
+// Flush implements http.Flusher by delegating to the underlying ResponseWriter.
+func (l *loggingWriter) Flush() {
+	if f, ok := l.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 func usage() {
 	fmt.Fprintf(os.Stderr, `Usage: sonarqube-mcp [OPTIONS] [TOOL_NAME] [JSON_ARGS]
 
 Options:
   -t, --transport <stdio|http|cli>  Transport mode (default "stdio")
                                      cli mode: invoke a tool directly from the command line
-  --port <number>                    HTTP server port (default 8080)
+  -p, --port <number>                HTTP server port (default 8080)
   -v, --verbose <0-10>              Request logging verbosity level
                                      0=silent, 1=access log, 2+=method+URL,
                                      3+=query, 5+=headers, 7+=body, 9+=pretty JSON
+  --print-default-config             Print default config.yaml to stdout and exit
   -h, --help                        Show this help message
 
 Environment:
@@ -90,6 +98,17 @@ CLI Mode:
   sonarqube-mcp -t cli <tool-name> [OPTIONS]   Invoke a tool with GNU-style options
                                                Use --help for tool-specific help
 `)
+}
+
+func printDefaultConfigYAML() {
+	fmt.Println("# sonarqube-mcp MCP server configuration")
+	fmt.Println("# Place this file at: $HOME/." + "sonarqube-mcp" + "/config.yaml")
+	fmt.Println()
+	fmt.Println("tools:")
+	fmt.Println("  # List of operationId values to register as MCP tools.")
+	fmt.Println("  # When empty or absent, all tools are registered.")
+	fmt.Println("  # Use this to limit what AI agents can discover.")
+	fmt.Println("  include: []")
 }
 
 func truncate(s string, max int) string {
@@ -108,10 +127,17 @@ func main() {
 
 	transport := flag.String("t", "stdio", "Transport mode: stdio, http, or cli")
 	flag.StringVar(transport, "transport", "stdio", "Transport mode: stdio, http, or cli")
-	port := flag.Int("port", 8080, "HTTP server port (only used when transport=http)")
+	port := flag.Int("p", 8080, "HTTP server port (only used when transport=http)")
+	flag.IntVar(port, "port", 8080, "HTTP server port (only used when transport=http)")
 	verbose := flag.Int("v", 0, "Request logging verbosity level (0-10)")
 	flag.IntVar(verbose, "verbose", 0, "Request logging verbosity level (0-10)")
+	printDefaultConfig := flag.Bool("print-default-config", false, "Print default config.yaml to stdout and exit")
 	flag.Parse()
+
+	if *printDefaultConfig {
+		printDefaultConfigYAML()
+		return
+	}
 
 	mcputils.SetVerbosity(*verbose)
 

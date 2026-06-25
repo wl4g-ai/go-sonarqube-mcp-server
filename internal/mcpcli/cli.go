@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	mcputils "sonarqube-mcp/internal/helpers"
 	mcptools "sonarqube-mcp/internal/mcptools"
 )
 
@@ -25,8 +26,13 @@ func shortDesc(desc string) string {
 
 // ListTools prints all available tools as subcommands with one-line descriptions.
 func ListTools() {
+	enabled := mcputils.GetEnabledTools("sonarqube-mcp")
+
 	names := make([]string, 0, len(mcptools.Registry))
 	for name := range mcptools.Registry {
+		if len(enabled) > 0 && !enabled[name] {
+			continue
+		}
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -40,6 +46,11 @@ func ListTools() {
 
 // Call invokes a tool by name with GNU-style --flag arguments, forwarding as an HTTP request upstream.
 func Call(binName, toolName string, args []string) error {
+	enabled := mcputils.GetEnabledTools("sonarqube-mcp")
+	if len(enabled) > 0 && !enabled[toolName] {
+		return fmt.Errorf("tool %q is not enabled in config — use -t cli list to see available tools", toolName)
+	}
+
 	entry, ok := mcptools.Registry[toolName]
 	if !ok {
 		return fmt.Errorf("unknown tool %q — use -t cli list to see available tools", toolName)

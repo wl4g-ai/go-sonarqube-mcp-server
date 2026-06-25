@@ -87,7 +87,8 @@ var cloudOnlyToolNames = map[string]bool{
 	"run_advanced_code_analysis": true,
 }
 
-// NewMCPServer creates and returns an MCP server with all tools registered
+// NewMCPServer creates and returns an MCP server with all tools registered.
+// If $HOME/.{binaryName}/config.yaml has tools.include, only those tools are registered.
 func NewMCPServer() *server.MCPServer {
 	s := server.NewMCPServer(
 		"sonarqube-mcp",
@@ -97,9 +98,16 @@ func NewMCPServer() *server.MCPServer {
 		server.WithToolHandlerMiddleware(requestLoggerMiddleware),
 	)
 
+	// Load optional config to filter enabled tools
+	enabled := mcputils.GetEnabledTools("sonarqube-mcp")
+
 	isCloud := mcputils.IsCloud()
 
 	for name, entry := range mcptools.Registry {
+		// Apply config-based tool filtering
+		if len(enabled) > 0 && !enabled[name] {
+			continue
+		}
 		// System tools only on Server
 		if systemToolNames[name] && isCloud {
 			continue
